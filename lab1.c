@@ -49,6 +49,10 @@ void *quadrado(void *args){
 		
 	}
 	
+	// Liberando o ponteiro alocado para a 
+	// passagem do parâmetro
+	free(args);
+	
 	pthread_exit(NULL);
 
 }
