@@ -36,7 +36,7 @@ void* funcao_thread(void* arg){
 		
 			printf("Thread %d: Aguardando as outras threads terminarem seus somatórios.\n", meu_id);			
 			pthread_cond_wait(&cond_soma, & mutex_acesso);
-			printf("Saí do wait soma, id: %d\n", meu_id);
+			//printf("Saí do wait soma, id: %d\n", meu_id);
 
 		} else {			
 			printf("Thread %d: Último somatório feito. Liberando as Threads...\n", meu_id);
@@ -80,21 +80,6 @@ void* funcao_thread(void* arg){
 	printf("Thread %d: Meu somatório final: %d\n", meu_id, *somatorio);
 	pthread_exit( (void*) somatorio);
 
-	pthread_mutex_lock(&mutex_acesso);
-	iter++;
-	
-	if(iter < N_threads){
-	
-		printf("Aguardando fim de iteração.\n");
-		pthread_cond_wait(&cond_iter, &mutex_acesso);	
-	} else {
-	
-		printf("Ultima iteração, liberando...\n");
-		pthread_cond_broadcast(&cond_iter);	
-	}
-
-	pthread_mutex_unlock(&mutex_acesso);
-	
 }
 
 //funcao principal
