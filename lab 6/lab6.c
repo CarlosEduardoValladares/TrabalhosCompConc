@@ -12,7 +12,7 @@ int somado = 0;
 int iter = 0;
 
 //variaveis para sincronizacao
-pthread_mutex_t mutex_soma, mutex_escrita, mutex_acesso, mutex_iter;
+pthread_mutex_t mutex_acesso;
 pthread_cond_t cond_soma, cond_escrita, cond_iter;
 
 void* funcao_thread(void* arg){
@@ -34,20 +34,18 @@ void* funcao_thread(void* arg){
 		somado++;
 		if(somado < N_threads){
 		
-			pthread_mutex_unlock(&mutex_acesso);
 			printf("Thread %d: Aguardando as outras threads terminarem seus somatórios.\n", meu_id);			
-			pthread_cond_wait(&cond_soma, &mutex_soma);
+			pthread_cond_wait(&cond_soma, & mutex_acesso);
 			printf("Saí do wait soma, id: %d\n", meu_id);
-		}
-		
-		if(somado == N_threads){
-			
+
+		} else {			
 			printf("Thread %d: Último somatório feito. Liberando as Threads...\n", meu_id);
 			somado = 0;
-			pthread_mutex_unlock(&mutex_acesso);
 			pthread_cond_broadcast(&cond_soma);
 			
 		}
+
+		pthread_mutex_unlock(&mutex_acesso);
 		
 		int aleatorio = ((int)rand())%10;
 		pthread_cond_broadcast(&cond_soma);
@@ -64,15 +62,11 @@ void* funcao_thread(void* arg){
 		if(escrito < N_threads){
 		
 			printf("Thread %d: Aguardando as outras threads terminarem de escrever.\n", meu_id);
-			pthread_mutex_unlock(&mutex_acesso);
-			pthread_cond_wait(&cond_escrita, &mutex_escrita);
-		}
-		
-		if(escrito == N_threads){
-			
+			pthread_cond_wait(&cond_escrita, &mutex_acesso);
+
+		} else {			
 			printf("Thread %d: Última escrita feita. Liberando as Threads...\n", meu_id);
 			escrito = 0;
-			pthread_mutex_unlock(&mutex_acesso);
 			pthread_cond_broadcast(&cond_escrita);
 			
 		}
@@ -80,7 +74,7 @@ void* funcao_thread(void* arg){
 		printf("Thread %d: Liberada da trava de escrita!.\n", meu_id);
 		printf("Somatório parcial: %d\n", *somatorio);
 		
-		
+		pthread_mutex_unlock(&mutex_acesso);
 	}
 	
 	printf("Thread %d: Meu somatório final: %d\n", meu_id, *somatorio);
@@ -92,16 +86,14 @@ void* funcao_thread(void* arg){
 	if(iter < N_threads){
 	
 		printf("Aguardando fim de iteração.\n");
-		pthread_mutex_unlock(&mutex_acesso);
-		pthread_cond_wait(&cond_iter, &mutex_iter);	
-	}
-	
-	if(iter == N_threads){
+		pthread_cond_wait(&cond_iter, &mutex_acesso);	
+	} else {
 	
 		printf("Ultima iteração, liberando...\n");
-		pthread_mutex_unlock(&mutex_acesso);
 		pthread_cond_broadcast(&cond_iter);	
 	}
+
+	pthread_mutex_unlock(&mutex_acesso);
 	
 }
 
@@ -135,8 +127,6 @@ int main(int argc, char* argv[]) {
   int id[N_threads];
 
   //inicializa as variaveis de sincronizacao
-  pthread_mutex_init(&mutex_soma, NULL);
-  pthread_mutex_init(&mutex_escrita, NULL);
   pthread_mutex_init(&mutex_acesso, NULL);
   pthread_cond_init(&cond_soma, NULL);
   pthread_cond_init(&cond_escrita, NULL);
@@ -163,29 +153,11 @@ int main(int argc, char* argv[]) {
   }
   puts("");
   
-  printf("Valores finais retornados das threads:\n");
+  printf("Disposição final dos somatorios:\n");
   for(int i = 0; i < N_threads; i++){
   
-  	printf("Somatório da Thread %d: %d\n", i+1, somatorio_final[i]);
+  	printf("somatorio[%d]: %d\n", i, somatorio_final[i]);
   	
-  }
-  puts("");
-  
-  int igual = 0;
-  for(int i = 0; i < N_threads-1; i++){
-  
-  	if(somatorio_final[i] != somatorio_final[i+1]){
-  		igual = 1;
-  	}
-  	
-  }
-  
-  if(igual == 0){
-  
-  	printf("Todos os resultados retornados das threads são iguais\n")  ;
-  } else {
-  
-  	printf("Algum resultado das threads difere\n");  
   }
   puts("");
    
