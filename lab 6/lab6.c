@@ -145,6 +145,24 @@ int main(int argc, char* argv[]) {
   	
   }
   puts("");
+
+   int igual = 0;
+  for(int i = 0; i < N_threads-1; i++){
+
+  	if(somatorio_final[i] != somatorio_final[i+1]){
+  		igual = 1;
+  	}
+
+  }
+
+  if(igual == 0){
+
+  	printf("Todos os resultados retornados das threads são iguais\n")  ;
+  } else {
+
+  	printf("Algum resultado das threads difere\n");  
+  }
+  puts("");
    
   return 0;
 }
