@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <string.h>
 
 #define N_THREADS 2
 #define N_ELEMENTOS 100
@@ -14,6 +15,7 @@ struct elemArv{
 	int valor;
 	elemArv* filhoEsq;
 	elemArv* filhoDir; 
+	elemArv* pai;
 
 };
 
@@ -23,6 +25,7 @@ elemArv* initArv(elemArv* arvore){
 	arvore -> valor = -1;
 	arvore -> filhoEsq = NULL;
 	arvore -> filhoDir = NULL;
+	arvore -> pai = NULL;
 	
 	return arvore;
 
@@ -43,6 +46,7 @@ void insereArv(elemArv* raiz, int numero){
 	} else if(raiz -> nFilhos == 0){
 		elemArv* novoNo = (elemArv*) malloc(sizeof(elemArv));
 		novoNo = initArv(novoNo);
+		novoNo -> pai = raiz;
 		
 		novoNo -> valor = numero;
 		raiz -> filhoEsq = novoNo;
@@ -52,6 +56,7 @@ void insereArv(elemArv* raiz, int numero){
 	} else if(raiz -> nFilhos == 1){
 		elemArv* novoNo = (elemArv*) malloc(sizeof(elemArv));
 		novoNo = initArv(novoNo);
+		novoNo -> pai = raiz;
 		
 		novoNo -> valor = numero;
 		raiz -> filhoDir = novoNo;
@@ -216,6 +221,82 @@ void* tarefa(void* arg){
 
 }
 
+char* recuperaCaminho(elemArv* no, char* stringCaminho){
+
+	elemArv* pai = no -> pai;
+	
+	if(pai == NULL){
+		return stringCaminho;
+	
+	}
+	
+	if(pai -> filhoEsq == no){
+		char ch = 'e';
+		strncat(stringCaminho, &ch, 1);
+		recuperaCaminho(pai, stringCaminho);
+	
+	}
+	
+	if(pai -> filhoDir == no){
+		char ch = 'd';
+		strncat(stringCaminho, &ch, 1);
+		recuperaCaminho(pai, stringCaminho);
+	
+	}
+	
+	return stringCaminho;
+
+}
+
+char *strrev(char *str)
+{
+      char *p1, *p2;
+
+      if (! str || ! *str)
+            return str;
+      for (p1 = str, p2 = str + strlen(str) - 1; p2 > p1; ++p1, --p2)
+      {
+            *p1 ^= *p2;
+            *p2 ^= *p1;
+            *p1 ^= *p2;
+      }
+      return str;
+}
+
+int corretude(elemArv* arvore, elemArv* retorno, int numero){
+
+	char* caminho = (char*) malloc(sizeof(char)*N_ELEMENTOS);
+	recuperaCaminho(retorno, caminho);
+	
+	caminho = strrev(caminho);
+	printf("Caminho da raiz até o nó: %s\n", caminho);
+	
+	int tamanho = strlen(caminho);
+	for(int i = 0; i < tamanho; i++){
+		if (caminho[i] == 'e'){
+			arvore = arvore -> filhoEsq;
+		
+		}
+		
+		if(caminho[i] == 'd'){
+			arvore = arvore -> filhoDir;
+		
+		}
+	
+	}
+	
+	if(arvore->valor == numero){	
+		return 0;
+	
+	} else{
+		return 1;
+			
+	}
+		
+	return 1;
+
+}
+
 int main(){
 
 	listaPonteiros = (ponteiroGlobal**) malloc(sizeof(ponteiroGlobal) * N_ELEMENTOS);
@@ -266,6 +347,8 @@ int main(){
 	  (args+i)->id = i;
 	  (args+i)->numero = numeroProcurado;
 	  
+	  printf("======= Início Log =======\n");
+	  puts("");
       if(pthread_create(tid+i, NULL, tarefa, (void*)(args+i))){
          puts("ERRO--pthread_create"); return 3;
       }
@@ -274,20 +357,23 @@ int main(){
 	//espera pelo termino da threads
 	for(int i=0; i<N_THREADS; i++) {
 		pthread_join(*(tid+i), NULL);
-	}   
-	
-	//printf("%p \n", retornos);
-	//printf("%p \n", retornos[0]);
-	//printf("%d \n", retornos[0]->valor);
+	}  
+	printf("\n======= Fim Log =======\n"); 
+	puts("");
 	
 	for(int i = 0; i < N_ELEMENTOS; i++){
 		if(retornos[i] == NULL){
 			break;
 			
 		}
-		printf("Número encontrado: %d \n", retornos[i] -> valor);
-		printf("Ponteiro na memória: %p \n", retornos[i]);
+		
+		if(corretude(arvore, retornos[i], numeroProcurado) != 0){
+			printf("Resultado incorreto, falha na corretude\n");
+			return 0;
+		}
 	}
+	
+	printf("Corretude avaliada sem erros\n");
 	
 	return  0;
 
