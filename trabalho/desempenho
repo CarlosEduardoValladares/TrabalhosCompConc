@@ -1,0 +1,147 @@
+	2 Threads:
+
+2^10:
+
+Digite o número a ser buscado: 1020
+
+Tempo busca sequencial: 0.000025s
+
+Tempo busca concorrente: 0.000907s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.028085
+
+2^15:
+
+Digite o número a ser buscado: 32500
+
+Tempo busca sequencial: 0.001339s
+
+Tempo busca concorrente: 0.007680s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.174417
+
+2^18:
+
+Digite o número a ser buscado: 250000
+
+Tempo busca sequencial: 0.004484s
+
+Tempo busca concorrente: 0.030644s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.146325
+
+	4 threads:
+
+2^10:
+
+Digite o número a ser buscado: 1000
+
+Tempo busca sequencial: 0.000026s
+
+Tempo busca concorrente: 0.001215s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.021792
+
+2^15:
+
+Digite o número a ser buscado: 30000
+
+Tempo busca sequencial: 0.001175s
+
+Tempo busca concorrente: 0.009659s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.121684
+
+2^18:
+
+Digite o número a ser buscado: 260000
+
+Tempo busca sequencial: 0.007191s
+
+Tempo busca concorrente: 0.041008s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.175354
+
+2^19:
+
+Digite o número a ser buscado: 500000
+
+Tempo busca sequencial: 0.010781s
+
+Tempo busca concorrente: 0.081367s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.132494
+
+
+	6 threads:
+
+2^10:
+
+Digite o número a ser buscado: 1000
+
+Tempo busca sequencial: 0.000037s
+
+Tempo busca concorrente: 0.001667s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.022170
+
+2^15:
+
+Digite o número a ser buscado: 32000
+
+Tempo busca sequencial: 0.001219s
+
+Tempo busca concorrente: 0.011783s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.103465
+
+2^18:
+
+Digite o número a ser buscado: 262142
+
+Tempo busca sequencial: 0.009667s
+
+Tempo busca concorrente: 0.065603s
+
+Corretude sequencial avaliada sem erros
+
+Corretude concorrente avaliada sem erros
+
+Desempenho: 0.147350
+
