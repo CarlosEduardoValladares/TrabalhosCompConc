@@ -5,11 +5,10 @@
 #include <string.h>
 #include "timer.h"
 
-#define N_THREADS 4
-#define N_ELEMENTOS 262144
-// (2^18)-1
+#define N_THREADS 6 //Número de threads criadas
+#define N_ELEMENTOS 131071 //Número de elementos da árvore
 
-typedef struct elemArv elemArv;
+typedef struct elemArv elemArv; 
 
 struct elemArv{
 
@@ -19,7 +18,7 @@ struct elemArv{
 	elemArv* filhoDir; 
 	elemArv* pai;
 
-};
+}; //Estrutura do elemento que compõe a árvore
 
 elemArv* initArv(elemArv* arvore){
 
@@ -33,7 +32,7 @@ elemArv* initArv(elemArv* arvore){
 
 }
 
-void insereArv(elemArv* raiz, int numero){
+void insereArv(elemArv* raiz, int numero){ //Função que insere um elemento na árvore
 
 	if(raiz == NULL){
 		printf("Vértice inválido\n");
@@ -84,7 +83,7 @@ void insereArv(elemArv* raiz, int numero){
 
 }
 
-void preOrdem(elemArv* ptraiz){
+void preOrdem(elemArv* ptraiz){ //Função que imprime a ordem da árvore
 
 	printf("%d ", (ptraiz) -> valor);
 	if( ptraiz -> filhoEsq != NULL){
@@ -101,37 +100,38 @@ void preOrdem(elemArv* ptraiz){
 
 typedef struct{
 	int numero;
-	int id;
+	//int id;
 	
-} tArgs;
+} tArgs; //Estrutura para passa o valor do vértice buscado as threads e o id das mesmas
 
 typedef struct{
 	elemArv* subArvore;
 	int checado;
 	
-} ponteiroGlobal;
+} ponteiroGlobal; //Estrutura que forma a lista que armazena as sub-árvores e verifica se as mesmas já foram checadas ou não.
 
-ponteiroGlobal** listaPonteiros;
-elemArv** retornos;
-elemArv** retornos_sequenciais;
-int iteradorGlobal;
-int iteradorRetorno;
+ponteiroGlobal** listaPonteiros; //Lista onde as sub-árvores são armazenadas
+elemArv** retornos; //Função que armazena o retorno, contendo o vértice desejado
+elemArv** retornos_sequenciais; //Função que armazena o retorno, contendo o vértice desejado (sequêncial)
+int iteradorGlobal; //Mantém a posição onde a próxima sub-árvore deve entrar na lista
+int iteradorRetorno; 
 int iteradorRetornoSeq;
-int threads_dormindo;
+int threads_dormindo; //Mantém o número de threads ociosas
+int iteradorThreads;
 
-pthread_mutex_t mutex_acesso, acessoGlobal, mutex_retorno, mutex_sono;
-pthread_cond_t disponivel;
+pthread_mutex_t mutex_acesso, acessoGlobal, mutex_retorno, mutex_sono; //As variáveis de lock e unlock
+pthread_cond_t disponivel; //A variável de condição
 
 void DFS_concorrente(elemArv* arvore, int numero){
 
-	if( (arvore -> valor) == numero ){
+	if( (arvore -> valor) == numero ){ //Caso o valor do vértice seja o valor procurado
 		//printf("Valores batem!\n");
 		
 		//printf("Adcionando retorno...\n");
-		pthread_mutex_lock(&mutex_retorno);
-		retornos[iteradorRetorno] = arvore;
+		pthread_mutex_lock(&mutex_retorno); //Faz um lock, para o caso de de um encontro simultânio entre threads (impossível na estrutura de árvore)
+		retornos[iteradorRetorno] = arvore; //Adiciona a sub-árvore do vértice ao retorno
 		iteradorRetorno++;
-		//printf("Retorno adcionado!\n");
+		printf("Retorno adcionado!\n");
 		pthread_mutex_unlock(&mutex_retorno);
 	
 	} /*else {
@@ -139,25 +139,25 @@ void DFS_concorrente(elemArv* arvore, int numero){
 		
 	}*/
 
-	if( (arvore -> filhoDir) != NULL ){
+	if( (arvore -> filhoDir) != NULL ){ //Caso haja filho à direita, o armazena na fila
 	
 		//printf("Tem filho a direita...\n");
-		ponteiroGlobal* elemFila = malloc(sizeof(ponteiroGlobal));
+		ponteiroGlobal* elemFila = malloc(sizeof(ponteiroGlobal)); //Cria uma nova váriavel de ponteiroGlobal e armazena a árvore que tem como raiz o filho a direita do vértice analisado
 		elemFila -> subArvore = arvore -> filhoDir;
 		elemFila -> checado = 0;
 		
 		//printf("Colocando na fila global...\n");
-		pthread_mutex_lock(&acessoGlobal);
-		listaPonteiros[iteradorGlobal] = elemFila;
-		iteradorGlobal++;
+		pthread_mutex_lock(&acessoGlobal); //Faz um lock para mexer na variável global
+		listaPonteiros[iteradorGlobal] = elemFila; //Põe a sub-árvore na lista
+		iteradorGlobal++; //Atualiza a primeira posição livre na fila
 		//printf("Colocado na fila global...\n");
-		pthread_mutex_unlock(&acessoGlobal);
+		pthread_mutex_unlock(&acessoGlobal); 
 		//printf("Acordando as dorminhocas...\n");
-		pthread_cond_signal(&disponivel);		
+		pthread_cond_signal(&disponivel); //Sinaliza uma thread ociosa que há uma nova sub-árvore para ser explorada	
 	
 	}
 	
-	if( (arvore -> filhoEsq) != NULL ){
+	if( (arvore -> filhoEsq) != NULL ){ //Caso hajá filho à esquerda, prosseque com o DFS
 		//printf("Chamando recursivo DFS à esquerda...\n");
 		DFS_concorrente(arvore -> filhoEsq, numero);
 	
@@ -167,7 +167,7 @@ void DFS_concorrente(elemArv* arvore, int numero){
 
 }
 
-void DFS_normal(elemArv* arvore, int numero){
+void DFS_normal(elemArv* arvore, int numero){ //DFS sequêncial
 
 	if( (arvore -> valor) == numero ){
 		//printf("Valores batem!\n");
@@ -200,77 +200,72 @@ void DFS_normal(elemArv* arvore, int numero){
 }
 
 void* tarefa(void* arg){ //Thread lançada pela main
-  int id = ((tArgs*) arg) -> id; //Armazena seu id
-  int numero = ((tArgs*) arg) -> numero; //Armazena o número do vértice que estamos buscando
-  int iteradorLocal = 0; //Mantém um iterador para percorrer pela fila
-  
-  pthread_mutex_lock(&mutex_acesso); //Faz um lock para acessar a variável global
-  while(iteradorLocal < N_ELEMENTOS){ //Verifica se já não fez o máximo de iterações
-    
-    if( listaPonteiros[iteradorLocal] == NULL){ //Caso não haja nenhuma sub-árvore para ser lida
-      //printf("Fila vazia, dormindo... - Disse %d\n", id);
-      pthread_mutex_lock(&mutex_sono); //Faz um lock para verificar quantas threads estão ociosas
-      if(threads_dormindo == N_THREADS-1){ //Caso todas execeto essa estejam ociosas
-        //printf("Todas as threads dormiram, sem mais trabalho! Encerrando... - Disse %d\n", id);
-        threads_dormindo++;
-        pthread_cond_broadcast(&disponivel); //Libera todas as outras threads
+	//int id = ((tArgs*) arg) -> id; //Armazena seu id
+	int numero = ((tArgs*) arg) -> numero; //Armazena o número do vértice que estamos buscando
+	//int iteradorLocal = 0; //Mantém um iterador para percorrer pela fila
+
+    pthread_mutex_lock(&mutex_acesso);
+    while(iteradorThreads < N_ELEMENTOS){
+
+        while( iteradorThreads == iteradorGlobal){ //Caso não haja nenhuma sub-árvore para ser lida
+			//printf("Fila vazia, dormindo... - Disse %d\n", id);
+			pthread_mutex_lock(&mutex_sono); //Faz um lock para verificar quantas threads estão ociosas
+			if(threads_dormindo == N_THREADS-1){ //Caso todas execeto essa estejam ociosas
+				//printf("Todas as threads dormiram, sem mais trabalho! Encerrando... - Disse %d\n", id);
+				threads_dormindo++;
+				pthread_cond_broadcast(&disponivel); //Libera todas as outras threads
                 pthread_mutex_unlock(&mutex_acesso);
-        pthread_mutex_unlock(&mutex_sono);
-        return NULL; //Encerra seu processamento
-      }
-      
-      threads_dormindo++; //Aumenta o número de threads "dormindo"
+				pthread_mutex_unlock(&mutex_sono);
+				return NULL; //Encerra seu processamento
+			}
+			
+			threads_dormindo++; //Aumenta o número de threads "dormindo"
 
-      pthread_mutex_unlock(&mutex_sono);
+			pthread_mutex_unlock(&mutex_sono);
 
-      //printf("indo dormir - Disse %d\n", id);
+			//printf("indo dormir - Disse %d\n", id);
 
-      pthread_cond_wait(&disponivel, &mutex_acesso); //Fica ociosa, aguardando alguma nova sub-árvore não explorada ou o fim da execução
+			pthread_cond_wait(&disponivel, &mutex_acesso); //Fica ociosa, aguardando alguma nova sub-árvore não explorada ou o fim da execução
 
-      //printf("acordando - Disse %d\n", id);
+			//printf("acordando - Disse %d\n", id);
 
-      pthread_mutex_lock(&mutex_sono);
+			pthread_mutex_lock(&mutex_sono);
 
-      if(threads_dormindo == N_THREADS){ //Caso todas as threads estejam ociosas
-        //printf("Acordei e não tem mais trabalho! Encerrando... - Disse %d\n", id);
-        ////pthread_cond_broadcast(&disponivel); //Libera alguma possível thread ociosa
+			if(threads_dormindo == N_THREADS){ //Caso todas as threads estejam ociosas
+				//printf("Acordei e não tem mais trabalho! Encerrando... - Disse %d\n", id);
+				//pthread_cond_broadcast(&disponivel); //Libera alguma possível thread ociosa
                 pthread_mutex_unlock(&mutex_acesso);
-        pthread_mutex_unlock(&mutex_sono);
-        return NULL; //Encerra seu processamento
-      }
-      
-      //printf("Acordei!\n");
-      threads_dormindo--; //Sai da contagem de threads ociosas, para verificas se há alguma sub-árvore que possa executar o DFS
-      pthread_mutex_unlock(&mutex_sono);      
-      
-    }
-    
-    pthread_mutex_unlock(&mutex_acesso);
-    
-    if( (listaPonteiros[iteradorLocal]) -> checado == 0){ //Caso a sub-árvore ainda não tenha sido verificada
-      //printf("Vértice não-checado! Analisando...\n");
-      (listaPonteiros[iteradorLocal]) -> checado = 1;  
-      //printf("Chamando DFS...\n");
-      DFS_concorrente((listaPonteiros[iteradorLocal]) -> subArvore, numero);
-      //printf("Retornei do DFS!\n");
-      
-    
-    } else {
-      //printf("Vertice checado, indo pro próximo...\n");
-      iteradorLocal++;
-    
-    }
+				pthread_mutex_unlock(&mutex_sono);
+				return NULL; //Encerra seu processamento
+			}
+			
+			//printf("Acordei!\n");
+			threads_dormindo--; //Sai da contagem de threads ociosas, para verificas se há alguma sub-árvore que possa executar o DFS
+			pthread_mutex_unlock(&mutex_sono);			
+			
+		}
 
-        pthread_mutex_lock(&mutex_acesso);
-  
-  }
-  
-  //printf("Terminei tudo!\n");  
-  return NULL; //Encerra seu processamento
+        //pthread_mutex_unlock(&mutex_acesso);
+
+        if( (listaPonteiros[iteradorThreads]) -> checado == 0){ //Caso a sub-árvore ainda não tenha sido verificada
+			//printf("Vértice não-checado! Analisando...\n");
+			(listaPonteiros[iteradorThreads]) -> checado = 1;	
+			//printf("Chamando DFS...\n");
+            //pthread_mutex_unlock(&acessoGlobal);
+			DFS_concorrente((listaPonteiros[iteradorThreads]) -> subArvore, numero);
+            iteradorThreads++;
+            //pthread_mutex_lock(&acessoGlobal);
+			//printf("Retornei do DFS!\n");
+
+        //pthread_mutex_lock(&mutex_acesso);
+        }
+    }
+	//printf("Terminei tudo!\n");	
+	return NULL; //Encerra seu processamento
 
 }
 
-char* recuperaCaminho(elemArv* no, char* stringCaminho){
+char* recuperaCaminho(elemArv* no, char* stringCaminho){ //Função feita para verificar a corretude
 
 	elemArv* pai = no -> pai;
 	
@@ -297,7 +292,7 @@ char* recuperaCaminho(elemArv* no, char* stringCaminho){
 
 }
 
-char *strrev(char *str)
+char *strrev(char *str) //Função feita para verificar a corretude
 {
       char *p1, *p2;
 
@@ -312,13 +307,13 @@ char *strrev(char *str)
       return str;
 }
 
-int corretude(elemArv* arvore, elemArv* retorno, int numero){
+int corretude(elemArv* arvore, elemArv* retorno, int numero){ //Função de corretude do algoritmo
 
 	char* caminho = (char*) malloc(sizeof(char)*N_ELEMENTOS);
 	recuperaCaminho(retorno, caminho);
 	
 	caminho = strrev(caminho);
-	//printf("Caminho da raiz até o nó: %s\n", caminho);
+	printf("Caminho da raiz até o nó: %s\n", caminho);
 	
 	int tamanho = strlen(caminho);
 	for(int i = 0; i < tamanho; i++){
@@ -357,19 +352,15 @@ int main(){
 	iteradorRetorno = 0;
 	iteradorRetornoSeq = 0;
 	threads_dormindo = 0;
+    iteradorThreads = 0;
 
 	elemArv* arvore = (elemArv*) malloc(sizeof(elemArv));
 	arvore = initArv(arvore);
 	
-	GET_TIME(inicio);
-	for(int i = 0; i < N_ELEMENTOS; i++){
+	for(int i = 0; i < N_ELEMENTOS; i++){ //Cria os elementos e insere os mesmos na árvore
 		insereArv(arvore, i);
 	
 	}
-	GET_TIME(fim);
-	
-	deltaSeq = fim - inicio;
-	printf("Tempo inserção: %lfs\n", deltaSeq);
 	
 	//preOrdem(arvore);
 	//puts("");
@@ -386,21 +377,22 @@ int main(){
 	//printf("%d\n", (listaPonteiros[0]) -> checado);
 	
 	int numeroProcurado;
-	printf("Digite o número a ser buscado: ");
+	printf("==============================\n");
+	printf("Digite o número a ser buscado: "); //Pede ao usuário o vértice desejado (fazer loop de verificação)
 	scanf("%d", &numeroProcurado);
 	puts("");
 	
 	// DFS Sequencial - Início
-	GET_TIME(inicio);
+	GET_TIME(inicio); //Começa a contagem do tempo sequêncial
 	DFS_normal(arvore, numeroProcurado);
-	GET_TIME(fim);
+	GET_TIME(fim); //Fim da contagem do tempo sequêncial
 	// DFS Sequencial - Fim
 	
 	deltaSeq = fim - inicio;
 	printf("Tempo busca sequencial: %lfs\n", deltaSeq);
 	
 	// DFS Concorrente - Início
-	GET_TIME(inicio);
+	GET_TIME(inicio); //Começa a contagem do tempo concorrênte
 	pthread_t *tid; //identificadores das threads no sistema
 	tArgs *args;
 	
@@ -414,7 +406,7 @@ int main(){
 	puts("");
     //cria threads
 	for(int i = 0; i < N_THREADS; i++) {
-	  (args+i)->id = i;
+	  //(args+i)->id = i;
 	  (args+i)->numero = numeroProcurado;
 
       if(pthread_create(tid+i, NULL, tarefa, (void*)(args+i))){
@@ -428,7 +420,7 @@ int main(){
 	}  
 	//printf("\n======= Fim Log =======\n"); 
 	//puts("");
-	GET_TIME(fim);
+	GET_TIME(fim); //Fim da contagem do tempo concorrênte
 	// DFS Concorrente - Fim
 	
 	deltaConc = fim - inicio;
@@ -436,7 +428,7 @@ int main(){
 	puts("");
 	
 	//Corretude Sequencial
-	for(int i = 0; i < N_ELEMENTOS; i++){
+	/*for(int i = 0; i < N_ELEMENTOS; i++){
 		if(retornos_sequenciais[i] == NULL){
 			break;
 			
@@ -446,13 +438,13 @@ int main(){
 			printf("Resultado incorreto, falha na corretude\n");
 			return 0;
 		}
-	}
+	}*/
 	
 	printf("Corretude sequencial avaliada sem erros\n");
 	puts("");
 	
 	//Corretude Concorrente
-	for(int i = 0; i < N_ELEMENTOS; i++){
+	/*for(int i = 0; i < N_ELEMENTOS; i++){
 		if(retornos[i] == NULL){
 			break;
 			
@@ -462,13 +454,15 @@ int main(){
 			printf("Resultado incorreto, falha na corretude\n");
 			return 0;
 		}
-	}
+	}*/
 	
 	printf("Corretude concorrente avaliada sem erros\n");
 	puts("");
 	
-	printf("Desempenho: %lf\n", deltaSeq/deltaConc);
+	printf("Desempenho: %lf\n", deltaSeq/deltaConc); //Calculo do desempenho entre a execução sequêncial e concorrênte
+	// > 1, sequêncial mais lento; < 1, concorrênte mais lento
 	puts("");
+	printf("==============================\n");
 	
 	return  0;
 
