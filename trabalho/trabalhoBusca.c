@@ -5,8 +5,8 @@
 #include <string.h>
 #include "timer.h"
 
-#define N_THREADS 6 //Número de threads criadas
-#define N_ELEMENTOS 131071 //Número de elementos da árvore
+#define N_THREADS 4 //Número de threads criadas
+#define N_ELEMENTOS 262143 //Número de elementos da árvore
 
 typedef struct elemArv elemArv; 
 
