@@ -131,7 +131,7 @@ void DFS_concorrente(elemArv* arvore, int numero){
 		pthread_mutex_lock(&mutex_retorno); //Faz um lock, para o caso de de um encontro simultânio entre threads (impossível na estrutura de árvore)
 		retornos[iteradorRetorno] = arvore; //Adiciona a sub-árvore do vértice ao retorno
 		iteradorRetorno++;
-		printf("Retorno adcionado!\n");
+		//printf("Retorno adcionado!\n");
 		pthread_mutex_unlock(&mutex_retorno);
 	
 	} /*else {
